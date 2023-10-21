@@ -101,4 +101,12 @@ class WorkPlacesView(ListView):
     def get_queryset(self):
         queryset = super().get_queryset()
         pk = self.kwargs.get('pk')
-        return queryset.filter(organization=pk)
+        return queryset.filter(organization=pk).order_by('place_id')
+
+    def get_context_data(self, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+
+        context = super().get_context_data(*args, **kwargs)
+        context['organization'] = Organisation.objects.get(pk=pk)
+
+        return context

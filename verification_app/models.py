@@ -8,7 +8,7 @@ class Organisation(models.Model):
     email = models.EmailField()
 
     def __str__(self):
-        return f'Организация: {self.name}'
+        return f'{self.name}'
 
 
 class WorkPlace(models.Model):

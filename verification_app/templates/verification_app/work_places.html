@@ -4,10 +4,21 @@
 
 {% block content %}
 
-    <h2> Информация по организациям </h2>
+<h2> {{ organization }} </h2>
 
+<table>
+    <tr>
+        <th>id</th>
+        <th>текст заголовка</th>
+    </tr>
     {% for place in work_places %}
-        <p>{{ place.place_id }}</p>
+    <tr>
+        <td> {{ place.place_id }}</td>
+        <td style="background-color: {% if place.status == 'CH' %} green {% else %} red {% endif %}">
+            {{ place.status }}
+        </td>
+    </tr>
     {% endfor %}
+</table>
 
 {% endblock %}
