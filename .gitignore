@@ -3,7 +3,11 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Python
 .idea
+
+# Files progamm
+uploads/xml_files
 
 # C extensions
 *.so
