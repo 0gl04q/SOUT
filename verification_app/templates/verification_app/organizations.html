@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+
+{% block title %} Информация по организациям {% endblock %}
+
+{% block content %}
+
+    <h2> Информация по организациям </h2>
+
+    {% for org in organizations %}
+        <p><a href="{% url 'work-places' pk=org.pk %}">{{ org.name }}</a></p>
+    {% endfor %}
+
+{% endblock %}
