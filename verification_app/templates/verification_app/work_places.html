@@ -6,14 +6,24 @@
 
 <h2> {{ organization }} </h2>
 
+<p><a href="{% url 'download-excel-file' pk=organization.pk %}"> Скачать Excel </a></p>
+
 <table>
     <tr>
-        <th>id</th>
-        <th>текст заголовка</th>
+        <th>Подразделение</th>
+        <th>Номер РМ</th>
+        <th>Наименование РМ</th>
+        <th>Работники</th>
+        <th>Код ОК-01694</th>
+        <th>Статус</th>
     </tr>
     {% for place in work_places %}
     <tr>
+        <td> {{ place.sub_unit }}</td>
         <td> {{ place.place_id }}</td>
+        <td> {{ place.position }}</td>
+        <td> {{ place.workers_quantity }}</td>
+        <td> {{ place.profession }}</td>
         <td style="background-color: {% if place.status == 'CH' %} green {% else %} red {% endif %}">
             {{ place.status }}
         </td>

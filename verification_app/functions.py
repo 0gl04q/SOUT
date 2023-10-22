@@ -1,10 +1,8 @@
 import pandas as pd
+from io import BytesIO
 
 from datetime import date, datetime
 
-from pathlib import Path
-
-from lxml import etree
 import xml.etree.ElementTree as ET
 
 from dataclasses import dataclass
@@ -59,42 +57,20 @@ class SOUTFile:
 
 
 def create_xlsx(work_places):
-    def color_cells(val):
-        status_color = {
-            'Checked': 'color: white; background-color: green',
-            'Except': 'color: black; background-color: yellow',
-            'Not_check': 'color: black; background-color: white',
-        }
-
-        return status_color.get(val, 'color: black; background-color: white')
-
     df = pd.DataFrame(
         {
-            'Подразделение': [place.SubUnit for place in all_work_place_organization],
-            'Номер РМ': [place.Id for place in all_work_place_organization],
-            'Наименование РМ': [place.Position for place in all_work_place_organization],
-            'Работники': [place.WorkersQuantity for place in all_work_place_organization],
-            'Код ОК-01694': [place.Profession for place in all_work_place_organization],
-            'Статус': [place.Status for place in all_work_place_organization]
+            'Подразделение': [place.sub_unit for place in work_places],
+            'Номер РМ': [place.place_id for place in work_places],
+            'Наименование РМ': [place.position for place in work_places],
+            'Работники': [place.workers_quantity for place in work_places],
+            'Код ОК-01694': [place.profession for place in work_places]
         }
     )
 
-    df = df.style.map(color_cells, subset=pd.IndexSlice[:, 'Статус'])
+    output = BytesIO()
+    writer = pd.ExcelWriter(output)
+    df.to_excel(writer, sheet_name='WorkPlacesInfo', index=False)
+    writer._save()
+    output.seek(0)
 
-    df.to_excel('./itg.xlsx', sheet_name='WorkPlacesInfo', index=False)
-
-
-def upload_file(path):
-    organization = '21782238'
-
-    directory = f'./SOUTFile/Organizations/{organization}'
-
-    path_list = Path(directory).glob('report*.xml')
-
-    all_work_place_organization = []
-    for path in path_list:
-        sf = SOUTFile(str(path))
-        check_entry(all_work_place_organization, sf.WorkPlacesInfo)
-        all_work_place_organization.extend(sf.WorkPlacesInfo)
-
-    create_xlsx(all_work_place_organization)
+    return output

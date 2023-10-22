@@ -1,11 +1,13 @@
-from django.shortcuts import render, redirect
-
 import zipfile
-from django.core.files.base import ContentFile
 
-from .functions import SOUTFile
-from django.views.generic.edit import CreateView, View
+from django.shortcuts import redirect
+from django.core.files.base import ContentFile
+from django.views.generic.edit import CreateView
 from django.views.generic import ListView
+from django.http import HttpResponse
+from django.utils.encoding import escape_uri_path
+
+from .functions import SOUTFile, create_xlsx
 from .forms import FileXMLForm
 from .models import FileXML, Organisation, WorkPlace
 
@@ -110,3 +112,14 @@ class WorkPlacesView(ListView):
         context['organization'] = Organisation.objects.get(pk=pk)
 
         return context
+
+
+def get_sout_file(request, pk):
+    work_places = WorkPlace.objects.filter(organization=pk)
+
+    output = create_xlsx(work_places)
+
+    response = HttpResponse(output.read(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename={escape_uri_path("SOUT-Excel.xlsx")}'
+
+    return response
