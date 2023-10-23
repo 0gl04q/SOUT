@@ -65,7 +65,7 @@ class UploadSOUTView(CreateView):
         # Создаем рабочие места
         work_places = sout_info.WorkPlacesInfo
         for place in work_places:
-            old_work_place = WorkPlace.objects.filter(place_id=place.Id).first()
+            old_work_place = WorkPlace.objects.filter(place_id=place.Id, organization=organization).first()
 
             new_work_place = WorkPlace(
                 sub_unit=place.SubUnit,
@@ -89,9 +89,9 @@ class UploadSOUTView(CreateView):
 
 
 class OrganizationsView(ListView):
+    paginate_by = 5
     model = Organisation
     template_name = 'verification_app/organizations.html'
-    context_object_name = 'organizations'
 
 
 class WorkPlacesView(ListView):
@@ -103,7 +103,7 @@ class WorkPlacesView(ListView):
     def get_queryset(self):
         queryset = super().get_queryset()
         pk = self.kwargs.get('pk')
-        return queryset.filter(organization=pk).order_by('place_id')
+        return queryset.filter(organization=pk).order_by('status')
 
     def get_context_data(self, *args, **kwargs):
         pk = self.kwargs.get('pk')

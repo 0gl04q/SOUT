@@ -6,8 +6,26 @@
 
     <h2> Информация по организациям </h2>
 
-    {% for org in organizations %}
+    {% for org in page_obj %}
         <p><a href="{% url 'work-places' pk=org.pk %}">{{ org.name }}</a></p>
     {% endfor %}
 
+
+    <div class="pagination">
+        <span class="step-links">
+            {% if page_obj.has_previous %}
+                <a href="?page=1">&laquo; Начало</a>
+                <a href="?page={{ page_obj.previous_page_number }}">Предыдущая</a>
+            {% endif %}
+
+            <span class="current">
+                Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}.
+            </span>
+
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}">Следующая</a>
+                <a href="?page={{ page_obj.paginator.num_pages }}">Конец &raquo;</a>
+            {% endif %}
+        </span>
+    </div>
 {% endblock %}
