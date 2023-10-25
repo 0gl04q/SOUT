@@ -6,6 +6,7 @@ from django.views.generic.edit import CreateView
 from django.views.generic import ListView
 from django.http import HttpResponse
 from django.utils.encoding import escape_uri_path
+from django.db.models import Q
 
 from .functions import SOUTFile, create_xlsx
 from .forms import FileXMLForm
@@ -89,9 +90,23 @@ class UploadSOUTView(CreateView):
 
 
 class OrganizationsView(ListView):
-    paginate_by = 5
+    paginate_by = 10
     model = Organisation
     template_name = 'verification_app/organizations.html'
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['question'] = self.request.GET.get('q')
+        return context
+
+    def get_queryset(self):
+        query = self.request.GET.get("q")
+        if query:
+            object_list = Organisation.objects.filter(
+                Q(name__icontains=query) | Q(inn__icontains=query)
+            )
+            return object_list
+        return Organisation.objects.all()
 
 
 class WorkPlacesView(ListView):
@@ -117,9 +132,12 @@ class WorkPlacesView(ListView):
 def get_sout_file(request, pk):
     work_places = WorkPlace.objects.filter(organization=pk)
 
+    inn_organization = Organisation.objects.get(pk=pk).inn
+
     output = create_xlsx(work_places)
 
-    response = HttpResponse(output.read(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = f'attachment; filename={escape_uri_path("SOUT-Excel.xlsx")}'
+    response = HttpResponse(output.read(),
+                            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename={escape_uri_path(f"{inn_organization}_SOUT.xlsx")}'
 
     return response

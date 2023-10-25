@@ -1,0 +1,13 @@
+.no-border {
+    border-top: none;
+    border-left: none;
+    border-right: none;
+}
+
+.align-right {
+    float: right
+}
+
+.text-justify {
+    text-align: justify;
+}

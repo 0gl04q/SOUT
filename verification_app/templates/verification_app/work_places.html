@@ -1,34 +1,37 @@
 {% extends 'base.html' %}
+{% load static %}
+
+{% block style %} <link rel="stylesheet" href="{% static 'verification_app/css/work_place.css' %}"> {% endblock %}
 
 {% block title %} Информация по организациям {% endblock %}
 
 {% block content %}
 
-<h2> {{ organization }} </h2>
+<h2 class="my-3 text-justify"> {{ organization }} <a href="{% url 'download-excel-file' pk=organization.pk %}" class="btn btn-success align-right">Скачать Excel</a> </h2>
 
-<p><a href="{% url 'download-excel-file' pk=organization.pk %}"> Скачать Excel </a></p>
-
-<table>
-    <tr>
-        <th>Подразделение</th>
-        <th>Номер РМ</th>
-        <th>Наименование РМ</th>
-        <th>Работники</th>
-        <th>Код ОК-01694</th>
-        <th>Статус</th>
-    </tr>
-    {% for place in work_places %}
-    <tr>
-        <td> {{ place.sub_unit }}</td>
-        <td> {{ place.place_id }}</td>
-        <td> {{ place.position }}</td>
-        <td> {{ place.workers_quantity }}</td>
-        <td> {{ place.profession }}</td>
-        <td style="background-color: {% if place.status == 'CH' %} green {% else %} red {% endif %}">
-            {{ place.status }}
-        </td>
-    </tr>
-    {% endfor %}
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th scope="col">Подразделение</th>
+            <th scope="col">Номер РМ</th>
+            <th scope="col">Наименование РМ</th>
+            <th scope="col">Работники</th>
+            <th scope="col">Код ОК-01694</th>
+            <th scope="col">Статус</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for place in work_places %}
+        <tr class=" {% if place.status == 'CH' %} table-success {% else %} table-warning {% endif %}">
+            <td> {{ place.sub_unit }}</td>
+            <td> {{ place.place_id }}</td>
+            <td> {{ place.position }}</td>
+            <td> {{ place.workers_quantity }}</td>
+            <td> {{ place.profession }}</td>
+            <td> {{ place.get_status_display  }} </td>
+        </tr>
+        {% endfor %}
+    </tbody>
 </table>
 
 {% endblock %}

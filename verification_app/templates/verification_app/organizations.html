@@ -4,28 +4,42 @@
 
 {% block content %}
 
-    <h2> Информация по организациям </h2>
+    <h2> Список организаций </h2>
 
-    {% for org in page_obj %}
-        <p><a href="{% url 'work-places' pk=org.pk %}">{{ org.name }}</a></p>
-    {% endfor %}
-
-
-    <div class="pagination">
-        <span class="step-links">
-            {% if page_obj.has_previous %}
-                <a href="?page=1">&laquo; Начало</a>
-                <a href="?page={{ page_obj.previous_page_number }}">Предыдущая</a>
-            {% endif %}
-
-            <span class="current">
-                Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}.
-            </span>
-
-            {% if page_obj.has_next %}
-                <a href="?page={{ page_obj.next_page_number }}">Следующая</a>
-                <a href="?page={{ page_obj.paginator.num_pages }}">Конец &raquo;</a>
-            {% endif %}
-        </span>
+    <div class="contains my-3">
+        <form action="{% url 'organizations' %}" method="get" class="d-flex">
+            <input class="form-control me-2" type="text" placeholder="Поиск по организации" name="q">
+            <button class="btn btn-outline-primary" type="submit">Поиск</button>
+        </form>
     </div>
+
+
+    <ul class="list-group mb-3">
+        {% for org in page_obj %}
+            <li class="list-group-item list-group-item-primary"><a href="{% url 'work-places' pk=org.pk %}">{{ org.name }}</a></li>
+        {% endfor %}
+    </ul>
+
+
+    <nav aria-label="Page navigation example">
+        <ul class="pagination">
+            {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Предыдущая</a>
+                </li>
+            {% endif %}
+            {% for i in page_obj.paginator.page_range %}
+                <li class="page-item {% if i == page_obj.number %}active{% endif %}">
+                    <a class="page-link" href="?page={{ i }}">{{ i }}</a>
+                </li>
+            {% endfor %}
+            {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">Следующая</a>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+
+
 {% endblock %}
