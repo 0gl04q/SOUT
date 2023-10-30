@@ -1,7 +1,10 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block style %} <link rel="stylesheet" href="{% static 'verification_app/css/work_place.css' %}"> {% endblock %}
+{% block style %}
+<link rel="stylesheet" href="{% static 'verification_app/css/work_place.css' %}">
+
+{% endblock %}
 
 {% block title %} Информация по организациям {% endblock %}
 
@@ -24,14 +27,26 @@
         {% for place in work_places %}
         <tr class=" {% if place.status == 'CH' %} table-success {% else %} table-warning {% endif %}">
             <td> {{ place.sub_unit }}</td>
-            <td> {{ place.place_id }}</td>
+            <td><a href="{% url 'work-place' pk=place.pk %}">{{ place.place_id }}</a></td>
             <td> {{ place.position }}</td>
             <td> {{ place.workers_quantity }}</td>
             <td> {{ place.profession }}</td>
-            <td> {{ place.get_status_display  }} </td>
+            <td>
+
+                <div class="list-group text-center" id="hover-container">
+                    <div>{{ place.get_status_display }}</div>
+                    <ul class="list-group list-group-flush">
+                        {% for des in place.descriptions.all %}
+                            <li class="list-group-item list-group-item-secondary"> {{ des.name }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            </td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
+
 
 {% endblock %}

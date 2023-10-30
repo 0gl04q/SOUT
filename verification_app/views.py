@@ -3,14 +3,14 @@ import zipfile
 from django.shortcuts import redirect
 from django.core.files.base import ContentFile
 from django.views.generic.edit import CreateView
-from django.views.generic import ListView
+from django.views.generic import ListView, DetailView
 from django.http import HttpResponse
 from django.utils.encoding import escape_uri_path
 from django.db.models import Q
 
 from .functions import SOUTFile, create_xlsx
 from .forms import FileXMLForm
-from .models import FileXML, Organisation, WorkPlace
+from .models import FileXML, Organisation, WorkPlace, DescriptionError, CHECKED, WARNING, CREATED
 
 
 class UploadSOUTView(CreateView):
@@ -77,14 +77,16 @@ class UploadSOUTView(CreateView):
                 workers_quantity=place.WorkersQuantity,
                 profession=place.Profession,
                 date_sout=place.SheetDate,
-                status=WorkPlace.CREATED
+                status=CREATED
             )
 
             if old_work_place:
-                old_work_place.status = new_work_place.status = WorkPlace.WARNING
-                old_work_place.save()
+                new_work_place.status = WARNING
+                err_repeat = DescriptionError.objects.get(description='Повтор')
+
+                new_work_place.descriptions.add(err_repeat)
             else:
-                new_work_place.status = WorkPlace.CHECKED
+                new_work_place.status = CHECKED
 
             new_work_place.save()
 
@@ -118,7 +120,7 @@ class WorkPlacesView(ListView):
     def get_queryset(self):
         queryset = super().get_queryset()
         pk = self.kwargs.get('pk')
-        return queryset.filter(organization=pk).order_by('status')
+        return queryset.filter(organization=pk).order_by('-status', 'place_id')
 
     def get_context_data(self, *args, **kwargs):
         pk = self.kwargs.get('pk')
@@ -127,6 +129,11 @@ class WorkPlacesView(ListView):
         context['organization'] = Organisation.objects.get(pk=pk)
 
         return context
+
+
+class WorkPlaceView(DetailView):
+    model = WorkPlace
+    template_name = 'verification_app/work_place.html'
 
 
 def get_sout_file(request, pk):

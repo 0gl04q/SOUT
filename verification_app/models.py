@@ -1,5 +1,17 @@
 from django.db import models
 
+CREATED = 'CR'
+CHECKED = 'CH'
+WARNING = 'WA'
+ERROR = 'ER'
+
+STATUSES = [
+    (CREATED, "Создано"),
+    (CHECKED, "Проверено"),
+    (WARNING, "Предупреждение"),
+    (ERROR, "Ошибка")
+]
+
 
 class Organisation(models.Model):
     name = models.CharField(max_length=500)
@@ -9,6 +21,19 @@ class Organisation(models.Model):
 
     def __str__(self):
         return f'{self.name}'
+
+
+class DescriptionError(models.Model):
+    status = models.CharField(
+        max_length=2,
+        choices=STATUSES,
+        default=CREATED,
+    )
+
+    name = models.CharField(max_length=100, default='')
+
+    def __str__(self):
+        return f'{self.status}: {self.name}'
 
 
 class WorkPlace(models.Model):
@@ -21,23 +46,13 @@ class WorkPlace(models.Model):
     profession = models.IntegerField()
     date_sout = models.DateField()
 
-    CREATED = 'CR'
-    CHECKED = 'CH'
-    WARNING = 'WA'
-    ERROR = 'ER'
-
-    STATUSES = [
-        (CREATED, "Создано"),
-        (CHECKED, "Проверено"),
-        (WARNING, "Предупреждение"),
-        (ERROR, "Ошибка")
-    ]
-
     status = models.CharField(
         max_length=2,
         choices=STATUSES,
         default=CREATED,
     )
+
+    descriptions = models.ManyToManyField(DescriptionError, default=None)
 
     def __str__(self):
         return f'Рабочее место: {self.place_id} - {self.organization.name}'
