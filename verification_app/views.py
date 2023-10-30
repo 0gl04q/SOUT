@@ -9,37 +9,40 @@ from django.utils.encoding import escape_uri_path
 from django.db.models import Q
 
 from .functions import SOUTFile, create_xlsx
-from .forms import FileXMLForm
-from .models import FileXML, Organisation, WorkPlace, DescriptionError, CHECKED, WARNING, CREATED
+from .forms import FileSOUTForm
+from .models import FileSOUT, Organisation, WorkPlace, DescriptionError, CHECKED, WARNING, CREATED
 
 
 class UploadSOUTView(CreateView):
-    model = FileXML
-    form_class = FileXMLForm
+    model = FileSOUT
+    form_class = FileSOUTForm
     template_name = 'verification_app/load_file.html'
     success_url = '/'
 
     def form_valid(self, form):
         instance = form.save(commit=False)
 
+        # Расшифровываем полученный файл
         zip_file = form.cleaned_data['file_xml']
 
         with zipfile.ZipFile(zip_file, 'r') as zf:
             file_name = 'report.xml'
             xml_data = zf.read(file_name)
 
+        # Получаем XML
         xml_content = ContentFile(xml_data)
 
+        # Парсим XML в обьект и проверяем есть ли такой файл
         file_sout = SOUTFile(xml_data)
 
-        if FileXML.objects.filter(sout_id=file_sout.sout_id):
+        if FileSOUT.objects.filter(sout_id=file_sout.sout_id):
             return redirect('upload')
 
+        # Сохраняем файл
         instance.file_xml.save(file_name, xml_content, save=False)
 
+        # Разбираем XML
         self.pars_xml(instance, file_sout)
-
-        instance.save()
 
         return super().form_valid(form)
 
@@ -48,6 +51,7 @@ class UploadSOUTView(CreateView):
 
         instance.date = sout_info.date
         instance.sout_id = sout_info.sout_id
+        instance.work_places_count = len(sout_info.WorkPlacesInfo)
 
         # Находим или создаем организацию
         organization = Organisation.objects.filter(inn=sout_info.organization.inn).first()
@@ -63,8 +67,11 @@ class UploadSOUTView(CreateView):
 
         instance.organization = organization
 
+        instance.save()
+
         # Создаем рабочие места
         work_places = sout_info.WorkPlacesInfo
+
         for place in work_places:
             old_work_place = WorkPlace.objects.filter(place_id=place.Id, organization=organization).first()
 
@@ -77,6 +84,7 @@ class UploadSOUTView(CreateView):
                 workers_quantity=place.WorkersQuantity,
                 profession=place.Profession,
                 date_sout=place.SheetDate,
+                file=instance,
                 status=CREATED
             )
 
@@ -111,9 +119,9 @@ class OrganizationsView(ListView):
         return Organisation.objects.all()
 
 
-class WorkPlacesView(ListView):
+class OrganizationPlacesView(ListView):
     model = WorkPlace
-    template_name = 'verification_app/work_places.html'
+    template_name = 'verification_app/organization_places.html'
     context_object_name = 'work_places'
     pk_url_kwarg = 'pk'
 
@@ -134,6 +142,26 @@ class WorkPlacesView(ListView):
 class WorkPlaceView(DetailView):
     model = WorkPlace
     template_name = 'verification_app/work_place.html'
+
+
+class FileSOUTView(ListView):
+    model = FileSOUT
+    template_name = 'verification_app/files_sout.html'
+    context_object_name = 'files_sout'
+    pk_url_kwarg = 'pk'
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        pk = self.kwargs.get('pk')
+        return queryset.filter(organization=pk).order_by('-date')
+
+    def get_context_data(self, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+
+        context = super().get_context_data(*args, **kwargs)
+        context['organization'] = Organisation.objects.get(pk=pk)
+
+        return context
 
 
 def get_sout_file(request, pk):

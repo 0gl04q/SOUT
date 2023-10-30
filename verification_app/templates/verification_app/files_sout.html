@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block style %}
+<link rel="stylesheet" href="{% static 'verification_app/css/work_place.css' %}">
+
+{% endblock %}
+
+{% block title %} Файлы организации {% endblock %}
+
+{% block content %}
+
+<h2 class="my-3 text-justify"> {{ organization }} </h2>
+
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th scope="col">Дата</th>
+            <th scope="col">Количество РМ</th>
+            <th scope="col">Статус</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for file in files_sout %}
+        <tr>
+            <td> {{ file.date }} </td>
+            <td> {{ file.work_places_count }} </td>
+            <td>
+                <p>ПОТОМ ДОДЕЛАЕМ</p>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+
+{% endblock %}

@@ -1,10 +1,10 @@
 from django import forms
-from .models import FileXML
+from .models import FileSOUT
 
 
-class FileXMLForm(forms.ModelForm):
+class FileSOUTForm(forms.ModelForm):
     class Meta:
-        model = FileXML
+        model = FileSOUT
         fields = ['file_xml']
 
         labels = {

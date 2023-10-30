@@ -36,6 +36,17 @@ class DescriptionError(models.Model):
         return f'{self.status}: {self.name}'
 
 
+class FileSOUT(models.Model):
+    file_xml = models.FileField(upload_to='xml_files')
+    date = models.DateField()
+    sout_id = models.IntegerField(unique=True)
+    organization = models.ForeignKey(Organisation, on_delete=models.CASCADE)
+    work_places_count = models.IntegerField()
+
+    def __str__(self):
+        return f'Файл XML: {self.organization.inn} - {self.work_places_count} РМ'
+
+
 class WorkPlace(models.Model):
     sub_unit = models.CharField(max_length=1000)
     sout_card_number = models.CharField(max_length=50)
@@ -45,6 +56,7 @@ class WorkPlace(models.Model):
     workers_quantity = models.IntegerField()
     profession = models.IntegerField()
     date_sout = models.DateField()
+    file = models.ForeignKey(FileSOUT, on_delete=models.CASCADE)
 
     status = models.CharField(
         max_length=2,
@@ -56,13 +68,3 @@ class WorkPlace(models.Model):
 
     def __str__(self):
         return f'Рабочее место: {self.place_id} - {self.organization.name}'
-
-
-class FileXML(models.Model):
-    file_xml = models.FileField(upload_to='xml_files')
-    date = models.DateField()
-    sout_id = models.IntegerField(unique=True)
-    organization = models.ForeignKey(Organisation, on_delete=models.CASCADE)
-
-    def __str__(self):
-        return f'Файл XML: {self.sout_id} - {self.date}'
