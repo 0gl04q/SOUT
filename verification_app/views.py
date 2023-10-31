@@ -6,11 +6,11 @@ from django.views.generic.edit import CreateView
 from django.views.generic import ListView, DetailView
 from django.http import HttpResponse
 from django.utils.encoding import escape_uri_path
-from django.db.models import Q
+from django.db.models import Q, Count
 
 from .functions import SOUTFile, create_xlsx
 from .forms import FileSOUTForm
-from .models import FileSOUT, Organisation, WorkPlace, DescriptionError, CHECKED, WARNING, CREATED
+from .models import FileSOUT, Organisation, WorkPlace, CHECKED, WARNING, CREATED, ERROR
 
 
 class UploadSOUTView(CreateView):
@@ -73,8 +73,6 @@ class UploadSOUTView(CreateView):
         work_places = sout_info.WorkPlacesInfo
 
         for place in work_places:
-            old_work_place = WorkPlace.objects.filter(place_id=place.Id, organization=organization).first()
-
             new_work_place = WorkPlace(
                 sub_unit=place.SubUnit,
                 sout_card_number=place.SOUTCardNumber,
@@ -84,17 +82,8 @@ class UploadSOUTView(CreateView):
                 workers_quantity=place.WorkersQuantity,
                 profession=place.Profession,
                 date_sout=place.SheetDate,
-                file=instance,
-                status=CREATED
+                file=instance
             )
-
-            if old_work_place:
-                new_work_place.status = WARNING
-                err_repeat = DescriptionError.objects.get(description='Повтор')
-
-                new_work_place.descriptions.add(err_repeat)
-            else:
-                new_work_place.status = CHECKED
 
             new_work_place.save()
 
@@ -121,7 +110,7 @@ class OrganizationsView(ListView):
 
 class OrganizationPlacesView(ListView):
     model = WorkPlace
-    template_name = 'verification_app/organization_places.html'
+    template_name = 'verification_app/work_places.html'
     context_object_name = 'work_places'
     pk_url_kwarg = 'pk'
 
@@ -151,28 +140,90 @@ class FileSOUTView(ListView):
     pk_url_kwarg = 'pk'
 
     def get_queryset(self):
-        queryset = super().get_queryset()
+        file_queryset = super().get_queryset()
         pk = self.kwargs.get('pk')
-        return queryset.filter(organization=pk).order_by('-date')
+        return file_queryset.filter(organization=pk).order_by('-date')
 
     def get_context_data(self, *args, **kwargs):
         pk = self.kwargs.get('pk')
 
         context = super().get_context_data(*args, **kwargs)
         context['organization'] = Organisation.objects.get(pk=pk)
+        context['files_sout'] = zip(context['files_sout'], self.sum_repeat())
 
         return context
 
+    def sum_repeat(self):
+        all_repeat = []
+
+        for file in self.get_queryset():
+            places_id = WorkPlace.objects.filter(organization=self.kwargs.get('pk')).values('place_id').annotate(
+                place_count=Count('place_id')).filter(place_count__gt=1).values('place_id')
+
+            queryset = WorkPlace.objects.filter(file=file, place_id__in=places_id).count()
+            all_repeat.append(queryset)
+
+        return all_repeat
+
+
+class WorkPlacesFileSOUTView(ListView):
+    model = WorkPlace
+    template_name = 'verification_app/work_places.html'
+    context_object_name = 'work_places'
+
+    def get_queryset(self):
+        pk_file = self.kwargs['pk_file']
+        pk_organization = self.kwargs['pk_organization']
+        queryset = WorkPlace.objects.filter(file=pk_file, organization=pk_organization)
+        return queryset
+
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+        context['organization'] = Organisation.objects.get(pk=self.kwargs['pk_organization'])
+        context['file'] = FileSOUT.objects.get(pk=self.kwargs['pk_file'])
+        return context
+
+
+class WarningView(ListView):
+    model = WorkPlace
+    template_name = 'verification_app/wa_places.html'
+    context_object_name = 'work_places'
+
+    def get_queryset(self):
+        queryset = self.warning_queryset()
+        return queryset
+
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+        context['organization'] = Organisation.objects.get(pk=self.kwargs['pk_organization'])
+        context['file'] = FileSOUT.objects.get(pk=self.kwargs['pk_file'])
+        context['wa_work_places'] = {
+            place.place_id: [
+                pl for pl in WorkPlace.objects.filter(organization=context['organization'], place_id=place.place_id).exclude(file=place.file)
+            ] for place in self.get_queryset()
+        }
+        return context
+
+    def warning_queryset(self):
+        pk_file = self.kwargs['pk_file']
+        pk_organization = self.kwargs['pk_organization']
+
+        places_id = WorkPlace.objects.filter(organization=pk_organization).values('place_id').annotate(place_count=Count('place_id')).filter(place_count__gt=1).values('place_id')
+
+        queryset = WorkPlace.objects.filter(file=pk_file, place_id__in=places_id)
+
+        return queryset
+
 
 def get_sout_file(request, pk):
-    work_places = WorkPlace.objects.filter(organization=pk)
+    work_places = WorkPlace.objects.filter(file=pk)
 
-    inn_organization = Organisation.objects.get(pk=pk).inn
+    organization = FileSOUT.objects.get(pk=pk).organization.name
 
     output = create_xlsx(work_places)
 
     response = HttpResponse(output.read(),
                             content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = f'attachment; filename={escape_uri_path(f"{inn_organization}_SOUT.xlsx")}'
+    response['Content-Disposition'] = f'attachment; filename={escape_uri_path(f"{organization}.xlsx")}'
 
     return response

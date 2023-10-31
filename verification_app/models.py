@@ -12,6 +12,14 @@ STATUSES = [
     (ERROR, "Ошибка")
 ]
 
+WA_REPEAT = 'RE'
+CH_CHECKED = 'CH'
+
+DESCRIPTIONS = [
+    (WA_REPEAT, 'Повтор'),
+    (CH_CHECKED, 'Без ошибок')
+]
+
 
 class Organisation(models.Model):
     name = models.CharField(max_length=500)
@@ -21,19 +29,6 @@ class Organisation(models.Model):
 
     def __str__(self):
         return f'{self.name}'
-
-
-class DescriptionError(models.Model):
-    status = models.CharField(
-        max_length=2,
-        choices=STATUSES,
-        default=CREATED,
-    )
-
-    name = models.CharField(max_length=100, default='')
-
-    def __str__(self):
-        return f'{self.status}: {self.name}'
 
 
 class FileSOUT(models.Model):
@@ -58,13 +53,8 @@ class WorkPlace(models.Model):
     date_sout = models.DateField()
     file = models.ForeignKey(FileSOUT, on_delete=models.CASCADE)
 
-    status = models.CharField(
-        max_length=2,
-        choices=STATUSES,
-        default=CREATED,
-    )
-
-    descriptions = models.ManyToManyField(DescriptionError, default=None)
-
     def __str__(self):
         return f'Рабочее место: {self.place_id} - {self.organization.name}'
+
+    def get_repeat_query_set(self, ):
+        return self.objects.filter()

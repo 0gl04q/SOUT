@@ -2,32 +2,42 @@
 {% load static %}
 
 {% block style %}
-<link rel="stylesheet" href="{% static 'verification_app/css/work_place.css' %}">
+    <link rel="stylesheet" href="{% static 'verification_app/css/work_place.css' %}">
 
 {% endblock %}
 
 {% block title %} Файлы организации {% endblock %}
 
 {% block content %}
-
-<h2 class="my-3 text-justify"> {{ organization }} </h2>
+<h3 class="my-3 text-justify">Файлы организации</h3>
+    <p>Организация: {{ organization }} </p>
 
 <table class="table table-bordered">
     <thead>
         <tr>
-            <th scope="col">Дата</th>
-            <th scope="col">Количество РМ</th>
-            <th scope="col">Статус</th>
+            <th scope="col">№ п/п</th>
+            <th scope="col">Год</th>
+            <th scope="col">Файл</th>
+            <th scope="col">Предупреждения</th>
         </tr>
     </thead>
     <tbody>
-        {% for file in files_sout %}
+        {% for file, warning_count in files_sout %}
         <tr>
-            <td> {{ file.date }} </td>
-            <td> {{ file.work_places_count }} </td>
+            <td> {{ forloop.counter }} </td>
+            <td> {{ file.date|date:"Y" }} </td>
             <td>
-                <p>ПОТОМ ДОДЕЛАЕМ</p>
+                <a href="{% url 'file-sout-places' organization.pk file.pk  %}"> {{ file.organization.name }} ( {{ file.work_places_count }} РМ ) </a>
             </td>
+            {% if warning_count > 0 %}
+                <td class=" table-warning table-success }">
+                    <a href="{% url 'wa-file-places' organization.pk file.pk %}"> {{ warning_count }}</a>
+                </td>
+            {% else %}
+                <td class="table-success">
+                    {{ warning_count }}
+                </td>
+            {% endif %}
         </tr>
         {% endfor %}
     </tbody>

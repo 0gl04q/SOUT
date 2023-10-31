@@ -1,3 +1,11 @@
+th, td {
+    text-align: center;
+}
+
+.text-left {
+    text-align: left;
+}
+
 .no-border {
     border-top: none;
     border-left: none;
@@ -11,3 +19,4 @@
 .text-justify {
     text-align: justify;
 }
+

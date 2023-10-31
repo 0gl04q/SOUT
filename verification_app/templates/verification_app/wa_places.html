@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% load custom_filters %}
+
+{% block style %}
+<link rel="stylesheet" href="{% static 'verification_app/css/work_place.css' %}">
+
+{% endblock %}
+
+{% block title %} Предупреждения и ошибки {% endblock %}
+
+{% block content %}
+
+<h3 class="my-3 text-justify"> Предупреждения и ошибки </h3>
+<p>Файл: {{ organization }} ( {{ file.work_places_count }} РМ )</p>
+<p>Количество предупреждений: {{ work_places|length }} </p>
+
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th scope="col">№ п/п</th>
+            <th scope="col">Подразделение</th>
+            <th scope="col">Номер РМ</th>
+            <th scope="col">Наименование РМ</th>
+            <th scope="col">Работники</th>
+            <th scope="col">Код ОК-01694</th>
+            <th scope="col">Статус</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for place in work_places %}
+        <tr>
+            <td> {{ forloop.counter }} </td>
+            <td> {{ place.sub_unit }}</td>
+            <td><a href="{% url 'work-place' pk=place.pk %}">{{ place.place_id }}</a></td>
+            <td> {{ place.position }}</td>
+            <td> {{ place.workers_quantity }}</td>
+            <td> {{ place.profession }}</td>
+            <td class="table-warning"> <b>Повтор</b>  </td>
+
+
+            {% for wa in wa_work_places|get_by_key:place.place_id %}
+                <tr class="table-secondary">
+                    <td> - </td>
+                    <td> {{ wa.sub_unit }}</td>
+                    <td><a href="{% url 'work-place' pk=wa.pk %}">{{ wa.place_id }}</a></td>
+                    <td> {{ wa.position }}</td>
+                    <td> {{ wa.workers_quantity }}</td>
+                    <td> {{ wa.profession }}</td>
+                    <td class="text-left small"> <b>Повтор в файле:</b> <a href="{% url 'file-sout-places' wa.file.organization.pk wa.file.pk  %}"> {{ wa.file.organization }} ( {{ wa.file.work_places_count }} РМ )</a></td>
+                </tr>
+            {% endfor %}
+
+
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+
+{% endblock %}

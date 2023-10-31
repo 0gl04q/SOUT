@@ -1,48 +1,42 @@
 {% extends 'base.html' %}
+
 {% load static %}
+
 
 {% block style %}
 <link rel="stylesheet" href="{% static 'verification_app/css/work_place.css' %}">
 
 {% endblock %}
 
-{% block title %} Информация по организациям {% endblock %}
+{% block title %} Рабочие места файла {% endblock %}
 
 {% block content %}
 
-<h2 class="my-3 text-justify"> {{ organization }} <a href="{% url 'download-excel-file' pk=organization.pk %}" class="btn btn-success align-right">Скачать Excel</a> </h2>
+<h3 class="my-3 text-justify">Рабочие места файла</h3>
+    <p>Файл: {{ organization }} ( {{ file.work_places_count }} РМ ) <a href="{% url 'download-excel-file' pk=file.pk %}" class="btn btn-success mb-3 align-right">Скачать Excel</a> </p>
+
 
 <table class="table table-bordered">
     <thead>
         <tr>
+            <th scope="col">№ п/п</th>
             <th scope="col">Подразделение</th>
             <th scope="col">Номер РМ</th>
             <th scope="col">Наименование РМ</th>
             <th scope="col">Работники</th>
             <th scope="col">Код ОК-01694</th>
-            <th scope="col">Статус</th>
         </tr>
     </thead>
     <tbody>
         {% for place in work_places %}
-        <tr class=" {% if place.status == 'CH' %} table-success {% else %} table-warning {% endif %}">
+        <tr>
+            <td> {{ forloop.counter }} </td>
             <td> {{ place.sub_unit }}</td>
             <td><a href="{% url 'work-place' pk=place.pk %}">{{ place.place_id }}</a></td>
             <td> {{ place.position }}</td>
             <td> {{ place.workers_quantity }}</td>
             <td> {{ place.profession }}</td>
-            <td>
 
-                <div class="list-group text-center" id="hover-container">
-                    <div>{{ place.get_status_display }}</div>
-                    <ul class="list-group list-group-flush">
-                        {% for des in place.descriptions.all %}
-                            <li class="list-group-item list-group-item-secondary"> {{ des.name }}</li>
-                        {% endfor %}
-                    </ul>
-                </div>
-
-            </td>
         </tr>
         {% endfor %}
     </tbody>
