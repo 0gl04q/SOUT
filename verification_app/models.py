@@ -23,7 +23,7 @@ DESCRIPTIONS = [
 
 class Organisation(models.Model):
     name = models.CharField(max_length=500)
-    inn = models.IntegerField(unique=True)
+    inn = models.BigIntegerField(unique=True)
     phone = models.CharField(max_length=50)
     email = models.EmailField()
 
