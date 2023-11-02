@@ -6,6 +6,9 @@ __pycache__/
 # Python
 .idea
 
+# Project
+CheckSOUTProject/settings.py
+
 # Files progamm
 uploads/xml_files
 
