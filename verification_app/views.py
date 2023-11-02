@@ -224,6 +224,6 @@ def get_sout_file(request, pk):
 
     response = HttpResponse(output.read(),
                             content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = f'attachment; filename={escape_uri_path(f"{organization}.xlsx")}'
+    response['Content-Disposition'] = f'attachment; filename={escape_uri_path(f"{organization}_SOUT.xlsx")}'
 
     return response
