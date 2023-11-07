@@ -6,7 +6,7 @@ from django.views.generic.edit import CreateView
 from django.views.generic import ListView, DetailView
 from django.http import HttpResponse
 from django.utils.encoding import escape_uri_path
-from django.db.models import Q, Count
+from django.db.models import Q, F, Count, OuterRef, Subquery, Max
 
 from .functions import SOUTFile, create_xlsx
 from .forms import FileSOUTForm
@@ -25,8 +25,9 @@ class UploadSOUTView(CreateView):
         # Расшифровываем полученный файл
         zip_file = form.cleaned_data['file_xml']
 
+        file_name = 'report.xml'
+
         with zipfile.ZipFile(zip_file, 'r') as zf:
-            file_name = 'report.xml'
             xml_data = zf.read(file_name)
 
         # Получаем XML
@@ -110,22 +111,41 @@ class OrganizationsView(ListView):
 
 class OrganizationPlacesView(ListView):
     model = WorkPlace
-    template_name = 'verification_app/work_places.html'
+    template_name = 'verification_app/work_places_organization.html'
     context_object_name = 'work_places'
-    pk_url_kwarg = 'pk'
 
     def get_queryset(self):
-        queryset = super().get_queryset()
-        pk = self.kwargs.get('pk')
-        return queryset.filter(organization=pk).order_by('-status', 'place_id')
+        pk = self.kwargs['pk']
+
+        queryset = get_organization_places_queryset(pk)
+        return queryset
 
     def get_context_data(self, *args, **kwargs):
-        pk = self.kwargs.get('pk')
+        pk = self.kwargs['pk']
 
         context = super().get_context_data(*args, **kwargs)
         context['organization'] = Organisation.objects.get(pk=pk)
-
+        context['total_places'] = WorkPlace.objects.filter(organization=pk).count()
         return context
+
+
+def get_organization_places_queryset(pk):
+    latest_dates = WorkPlace.objects.filter(
+        organization=pk,
+        place_id=OuterRef('place_id')
+    ).values('place_id').annotate(
+        max_date=Max('file__date')
+    ).values('max_date')
+
+    queryset = WorkPlace.objects.filter(
+        organization=pk
+    ).annotate(
+        max_date=Subquery(latest_dates)
+    ).filter(
+        file__date=F('max_date')
+    ).order_by('place_id', '-file__date')
+
+    return queryset
 
 
 class WorkPlaceView(DetailView):
@@ -168,7 +188,7 @@ class FileSOUTView(ListView):
 
 class WorkPlacesFileSOUTView(ListView):
     model = WorkPlace
-    template_name = 'verification_app/work_places.html'
+    template_name = 'verification_app/work_places_file.html'
     context_object_name = 'work_places'
 
     def get_queryset(self):
@@ -186,7 +206,7 @@ class WorkPlacesFileSOUTView(ListView):
 
 class WarningView(ListView):
     model = WorkPlace
-    template_name = 'verification_app/wa_places.html'
+    template_name = 'verification_app/warning_places.html'
     context_object_name = 'work_places'
 
     def get_queryset(self):
@@ -199,7 +219,10 @@ class WarningView(ListView):
         context['file'] = FileSOUT.objects.get(pk=self.kwargs['pk_file'])
         context['wa_work_places'] = {
             place.place_id: [
-                pl for pl in WorkPlace.objects.filter(organization=context['organization'], place_id=place.place_id).exclude(file=place.file)
+                pl for pl in WorkPlace.objects.filter(
+                    organization=context['organization'],
+                    place_id=place.place_id
+                ).exclude(file=place.file)
             ] for place in self.get_queryset()
         }
         return context
@@ -208,17 +231,35 @@ class WarningView(ListView):
         pk_file = self.kwargs['pk_file']
         pk_organization = self.kwargs['pk_organization']
 
-        places_id = WorkPlace.objects.filter(organization=pk_organization).values('place_id').annotate(place_count=Count('place_id')).filter(place_count__gt=1).values('place_id')
+        places_id = WorkPlace.objects.filter(
+            organization=pk_organization
+        ).values('place_id').annotate(
+            place_count=Count('place_id')
+        ).filter(place_count__gt=1).values('place_id')
 
         queryset = WorkPlace.objects.filter(file=pk_file, place_id__in=places_id)
 
         return queryset
 
 
-def get_sout_file(request, pk):
+def get_excel_file(request, pk):
     work_places = WorkPlace.objects.filter(file=pk)
 
     organization = FileSOUT.objects.get(pk=pk).organization.name
+
+    output = create_xlsx(work_places)
+
+    response = HttpResponse(output.read(),
+                            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename={escape_uri_path(f"{organization}_SOUT.xlsx")}'
+
+    return response
+
+
+def get_excel_organization(request, pk):
+    work_places = get_organization_places_queryset(pk)
+
+    organization = Organisation.objects.get(pk=pk)
 
     output = create_xlsx(work_places)
 

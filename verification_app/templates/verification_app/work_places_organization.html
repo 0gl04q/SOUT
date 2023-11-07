@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+
+{% block style %}
+<link rel="stylesheet" href="{% static 'verification_app/css/work_place.css' %}">
+
+{% endblock %}
+
+{% block title %} Рабочие места файла {% endblock %}
+
+{% block content %}
+
+<h3 class="my-3 text-justify">Рабочие места организации</h3>
+    <div>
+        <p>Организация: {{ organization }}</p>
+        <p>Всего загруженно рабочих мест: {{ total_places  }}</p>
+        <p>Количество рабочих мест прошедших проверку: {{ work_places|length  }}</p>
+
+        <a href="{% url 'download-excel-organization' pk=organization.pk %}" class="btn btn-success mb-3 ms-2 align-right">Скачать Excel</a>
+        <a href="{% url 'file-sout' pk=organization.pk %}" class="btn btn-primary mb-3 align-right">Файлы организации</a>
+    </div>
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th scope="col">№ п/п</th>
+            <th scope="col">Подразделение</th>
+            <th scope="col">Номер РМ</th>
+            <th scope="col">Наименование РМ</th>
+            <th scope="col">Работники</th>
+            <th scope="col">Код ОК-01694</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for place in work_places %}
+        <tr>
+            <td> {{ forloop.counter }} </td>
+            <td> {{ place.sub_unit }}</td>
+            <td><a href="{% url 'work-place' pk=place.pk %}">{{ place.place_id }}</a></td>
+            <td> {{ place.position }}</td>
+            <td> {{ place.workers_quantity }}</td>
+            <td> {{ place.profession }}</td>
+
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+
+{% endblock %}
