@@ -24,8 +24,8 @@ DESCRIPTIONS = [
 class Organisation(models.Model):
     name = models.CharField(max_length=500)
     inn = models.BigIntegerField(unique=True)
-    phone = models.CharField(max_length=50)
-    email = models.EmailField()
+    phone = models.CharField(max_length=50, null=True)
+    email = models.EmailField(null=True)
 
     def __str__(self):
         return f'{self.name}'
@@ -34,9 +34,14 @@ class Organisation(models.Model):
 class FileSOUT(models.Model):
     file_xml = models.FileField(upload_to='xml_files')
     date = models.DateField()
-    sout_id = models.IntegerField(unique=True)
+    sout_id = models.IntegerField(null=True)
     organization = models.ForeignKey(Organisation, on_delete=models.CASCADE)
     work_places_count = models.IntegerField()
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['date', 'organization'], name='unique_date_organization')
+        ]
 
     def __str__(self):
         return f'Файл XML: {self.organization.inn} - {self.work_places_count} РМ'

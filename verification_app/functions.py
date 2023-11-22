@@ -36,11 +36,11 @@ class SOUTFile:
         self.organization = Organization(
             name=self._Enterprise.find('Name').text,
             inn=int(self._Enterprise.find('INN').text),
-            phone=self._Enterprise.find('Phone').text,
-            email=self._Enterprise.find('E-mail').text
+            phone=self._Enterprise.find('Phone').text if self._Enterprise.find('Phone') else None,
+            email=self._Enterprise.find('E-mail').text if self._Enterprise.find('E-mail') else None
         )
         self.date = datetime.strptime(self._doc.find('Date').text, '%Y-%m-%d').date()
-        self.sout_id = int(self._doc.find('SoutId').text)
+        self.sout_id = int(self._doc.find('SoutId').text) if self._doc.find('SoutId') else None
 
     @staticmethod
     def __create_work_place_info(work_place_element):
@@ -50,7 +50,7 @@ class SOUTFile:
             id_place = place.find('Id').text
             position = place.find('Position').text
             workers_quantity = place.find('WorkersQuantity').text
-            profession = place.find('Profession').text
+            profession = place.find('Profession').text if place.find('Profession').text != 'Отсутствует' else 0
             date_sout = datetime.strptime(place.find('SheetDate').text, '%Y-%m-%d').date()
 
             yield WorkPlace(sub_unit, sout_card_number, id_place, position, workers_quantity, profession, date_sout)

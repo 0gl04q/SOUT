@@ -28,7 +28,11 @@ class UploadSOUTView(CreateView):
         file_name = 'report.xml'
 
         with zipfile.ZipFile(zip_file, 'r') as zf:
-            xml_data = zf.read(file_name)
+            try:
+                xml_data = zf.read('report.xml')
+            except KeyError:
+                # Для старых файлов СОУТ
+                xml_data = zf.read('data.xml')
 
         # Получаем XML
         xml_content = ContentFile(xml_data)
@@ -36,7 +40,11 @@ class UploadSOUTView(CreateView):
         # Парсим XML в обьект и проверяем есть ли такой файл
         file_sout = SOUTFile(xml_data)
 
-        if FileSOUT.objects.filter(sout_id=file_sout.sout_id):
+        organization = Organisation.objects.filter(inn=file_sout.organization.inn).first()
+        if organization and FileSOUT.objects.filter(
+                date=file_sout.date,
+                organization=organization
+        ):
             return redirect('upload')
 
         # Сохраняем файл
