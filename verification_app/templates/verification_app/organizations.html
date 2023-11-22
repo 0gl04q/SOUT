@@ -16,7 +16,7 @@
 
     <ul class="list-group mb-3">
         {% for org in page_obj %}
-            <li class="list-group-item"><a href="{% url 'file-sout' pk=org.pk %}">{{ org.name }}</a></li>
+            <li class="list-group-item"><a href="{% url 'organization-places' pk=org.pk %}">{{ org.name }}</a></li>
         {% endfor %}
     </ul>
 
