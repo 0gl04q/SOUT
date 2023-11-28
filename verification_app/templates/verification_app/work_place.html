@@ -6,10 +6,52 @@
 
 {% endblock %}
 
-{% block title %} Информация по организациям {% endblock %}
+{% block title %} Рабочее место {% endblock %}
 
 {% block content %}
 
-<p>hello</p>
+<h3> Файл: {{ object.organization }} ( {{ object.file.work_places_count }} РМ ) </h3>
+<p> Номер рабочего места: {{ object.place_id }}</p>
+
+
+<form method="post" class="mb-4">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <input type="submit" value="Cохранить">
+</form>
+
+
+<h3 class="mt-4" align="center">Проблемы связанные с этим РМ</h3>
+<table class="table">
+    <thead>
+        <tr>
+            <th scope="col">№</th>
+            <th scope="col">Подразделение</th>
+            <th scope="col">Номер РМ</th>
+            <th scope="col">Наименование РМ</th>
+            <th scope="col">Работники</th>
+            <th scope="col">Код ОК-01694</th>
+            <th scope="col">Статус</th>
+            <th scope="col">Описание</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            {% for wa in wa_work_places %}
+                <tr>
+                    <td> {{ forloop.counter }} </td>
+                    <td> {{ wa.sub_unit }}</td>
+                    <td>{{ wa.place_id }}</td>
+                    <td> {{ wa.position }}</td>
+                    <td> {{ wa.workers_quantity }}</td>
+                    <td> {{ wa.profession }}</td>
+                    <td class="text-left small"> <b>Повтор в файле:</b> <a href="{% url 'file-sout-places' wa.file.organization.pk wa.file.pk  %}"> {{ wa.file.organization }} ( {{ wa.file.work_places_count }} РМ )</a></td>
+                    <td> {{ wa.description }}</td>
+                </tr>
+            {% endfor %}
+        </tr>
+    </tbody>
+</table>
+
 
 {% endblock %}

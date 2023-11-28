@@ -1,16 +1,17 @@
 import zipfile
 
 from django.shortcuts import redirect
+from django.urls import reverse, reverse_lazy
 from django.core.files.base import ContentFile
 from django.views.generic.edit import CreateView
-from django.views.generic import ListView, DetailView
+from django.views.generic import ListView, UpdateView
 from django.http import HttpResponse
 from django.utils.encoding import escape_uri_path
 from django.db.models import Q, F, Count, OuterRef, Subquery, Max
 
 from .functions import SOUTFile, create_xlsx
-from .forms import FileSOUTForm
-from .models import FileSOUT, Organisation, WorkPlace, CHECKED, WARNING, CREATED, ERROR
+from .forms import FileSOUTForm, WorkPlaceForm
+from .models import FileSOUT, Organisation, WorkPlace
 
 
 class UploadSOUTView(CreateView):
@@ -82,6 +83,23 @@ class UploadSOUTView(CreateView):
         work_places = sout_info.WorkPlacesInfo
 
         for place in work_places:
+
+            old_work_places = WorkPlace.objects.filter(
+                place_id=place.Id,
+                organization=organization,
+                status=WorkPlace.CHECKED
+            )
+
+            if old_work_places:
+                status_wp = WorkPlace.WARNING
+
+                for old_wp in old_work_places:
+                    old_wp.status = status_wp
+                    old_wp.save()
+
+            else:
+                status_wp = WorkPlace.CHECKED
+
             new_work_place = WorkPlace(
                 sub_unit=place.SubUnit,
                 sout_card_number=place.SOUTCardNumber,
@@ -91,7 +109,8 @@ class UploadSOUTView(CreateView):
                 workers_quantity=place.WorkersQuantity,
                 profession=place.Profession,
                 date_sout=place.SheetDate,
-                file=instance
+                file=instance,
+                status=status_wp
             )
 
             new_work_place.save()
@@ -125,7 +144,12 @@ class OrganizationPlacesView(ListView):
     def get_queryset(self):
         pk = self.kwargs['pk']
 
-        queryset = get_organization_places_queryset(pk)
+        queryset = WorkPlace.objects.filter(
+            organization=pk,
+            status=WorkPlace.CHECKED
+        )
+
+        # queryset = get_organization_places_queryset(pk)
         return queryset
 
     def get_context_data(self, *args, **kwargs):
@@ -133,7 +157,20 @@ class OrganizationPlacesView(ListView):
 
         context = super().get_context_data(*args, **kwargs)
         context['organization'] = Organisation.objects.get(pk=pk)
-        context['total_places'] = WorkPlace.objects.filter(organization=pk).count()
+
+        workplace_counts = WorkPlace.objects.filter(organization=pk).values('status').annotate(count=Count('id'))
+
+        workplace_counts_statuses = [item['status'] for item in workplace_counts]
+
+        context['checked_places_count'] = workplace_counts.get(
+            status=WorkPlace.CHECKED
+        )['count'] if WorkPlace.CHECKED in workplace_counts_statuses else 0
+
+        context['warning_places_count'] = workplace_counts.get(
+            status=WorkPlace.WARNING
+        )['count'] if WorkPlace.WARNING in workplace_counts_statuses else 0
+
+        context['total_places_count'] = sum(item['count'] for item in workplace_counts)
         return context
 
 
@@ -156,9 +193,33 @@ def get_organization_places_queryset(pk):
     return queryset
 
 
-class WorkPlaceView(DetailView):
+class WorkPlaceView(UpdateView):
     model = WorkPlace
+    form_class = WorkPlaceForm
     template_name = 'verification_app/work_place.html'
+    success_url = reverse_lazy(viewname='wa-file-places')
+
+    def get_success_url(self):
+        pk_organization = self.object.organization.pk
+        pk_file = self.object.file.pk
+
+        return reverse_lazy('wa-file-places', kwargs={'pk_organization': pk_organization, 'pk_file': pk_file})
+
+    def get_context_data(self, **kwargs):
+        pk_organization = self.object.organization.pk
+        pk_file = self.object.file.pk
+        place_id = self.object.place_id
+
+        wa_queryset = WorkPlace.objects.filter(
+            place_id=place_id,
+            organization=pk_organization,
+            status=WorkPlace.WARNING
+        ).exclude(file=pk_file)
+
+        context = super().get_context_data(**kwargs)
+        context['wa_work_places'] = wa_queryset
+
+        return context
 
 
 class FileSOUTView(ListView):
@@ -218,36 +279,30 @@ class WarningView(ListView):
     context_object_name = 'work_places'
 
     def get_queryset(self):
-        queryset = self.warning_queryset()
+        pk_file = self.kwargs['pk_file']
+        pk_organization = self.kwargs['pk_organization']
+
+        queryset = WorkPlace.objects.filter(file=pk_file, organization=pk_organization, status=WorkPlace.WARNING)
+
         return queryset
 
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
         context['organization'] = Organisation.objects.get(pk=self.kwargs['pk_organization'])
         context['file'] = FileSOUT.objects.get(pk=self.kwargs['pk_file'])
+
+        # Отбор WA рабочих мест по place_id, без текущего файла
         context['wa_work_places'] = {
             place.place_id: [
                 pl for pl in WorkPlace.objects.filter(
                     organization=context['organization'],
-                    place_id=place.place_id
+                    place_id=place.place_id,
+                    status=WorkPlace.WARNING
                 ).exclude(file=place.file)
             ] for place in self.get_queryset()
         }
+
         return context
-
-    def warning_queryset(self):
-        pk_file = self.kwargs['pk_file']
-        pk_organization = self.kwargs['pk_organization']
-
-        places_id = WorkPlace.objects.filter(
-            organization=pk_organization
-        ).values('place_id').annotate(
-            place_count=Count('place_id')
-        ).filter(place_count__gt=1).values('place_id')
-
-        queryset = WorkPlace.objects.filter(file=pk_file, place_id__in=places_id)
-
-        return queryset
 
 
 def get_excel_file(request, pk):

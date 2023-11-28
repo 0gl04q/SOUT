@@ -1,5 +1,5 @@
 from django import forms
-from .models import FileSOUT
+from .models import FileSOUT, WorkPlace
 
 
 class FileSOUTForm(forms.ModelForm):
@@ -11,3 +11,13 @@ class FileSOUTForm(forms.ModelForm):
             "file_xml": "СОУТ файл",
         }
 
+
+class WorkPlaceForm(forms.ModelForm):
+    class Meta:
+        model = WorkPlace
+        fields = ['status', 'description']
+
+        labels = {
+            'status': 'Статус',
+            'description': 'Описание',
+        }

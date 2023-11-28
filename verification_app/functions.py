@@ -50,7 +50,7 @@ class SOUTFile:
             id_place = place.find('Id').text
             position = place.find('Position').text
             workers_quantity = place.find('WorkersQuantity').text
-            profession = place.find('Profession').text if place.find('Profession').text != 'Отсутствует' else 0
+            profession = place.find('Profession').text if place.find('Profession').text != 'Отсутствует' else None
             date_sout = datetime.strptime(place.find('SheetDate').text, '%Y-%m-%d').date()
 
             yield WorkPlace(sub_unit, sout_card_number, id_place, position, workers_quantity, profession, date_sout)

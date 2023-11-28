@@ -1,25 +1,5 @@
 from django.db import models
 
-CREATED = 'CR'
-CHECKED = 'CH'
-WARNING = 'WA'
-ERROR = 'ER'
-
-STATUSES = [
-    (CREATED, "Создано"),
-    (CHECKED, "Проверено"),
-    (WARNING, "Предупреждение"),
-    (ERROR, "Ошибка")
-]
-
-WA_REPEAT = 'RE'
-CH_CHECKED = 'CH'
-
-DESCRIPTIONS = [
-    (WA_REPEAT, 'Повтор'),
-    (CH_CHECKED, 'Без ошибок')
-]
-
 
 class Organisation(models.Model):
     name = models.CharField(max_length=500)
@@ -34,7 +14,7 @@ class Organisation(models.Model):
 class FileSOUT(models.Model):
     file_xml = models.FileField(upload_to='xml_files')
     date = models.DateField()
-    sout_id = models.IntegerField(null=True)
+    sout_id = models.IntegerField(null=True, blank=True)
     organization = models.ForeignKey(Organisation, on_delete=models.CASCADE)
     work_places_count = models.IntegerField()
 
@@ -48,18 +28,31 @@ class FileSOUT(models.Model):
 
 
 class WorkPlace(models.Model):
+
+    # CREATED = 'CR'
+    CHECKED = 'CH'
+    WARNING = 'WA'
+    NOT_USED = 'NU'
+
+    STATUSES = [
+        # (CREATED, "Создано"),
+        (CHECKED, "Проверено"),
+        (WARNING, "Предупреждение"),
+        (NOT_USED, "Не используется")
+    ]
+
     sub_unit = models.CharField(max_length=1000)
     sout_card_number = models.CharField(max_length=50)
     place_id = models.CharField(max_length=50)
     organization = models.ForeignKey(Organisation, on_delete=models.CASCADE)
     position = models.CharField(max_length=500)
     workers_quantity = models.IntegerField()
-    profession = models.IntegerField()
+    profession = models.IntegerField(null=True, blank=True)
     date_sout = models.DateField()
     file = models.ForeignKey(FileSOUT, on_delete=models.CASCADE)
 
+    status = models.CharField(max_length=2, choices=STATUSES, default=CHECKED)
+    description = models.CharField(max_length=200, default='', blank=True)
+
     def __str__(self):
         return f'Рабочее место: {self.place_id} - {self.organization.name}'
-
-    def get_repeat_query_set(self, ):
-        return self.objects.filter()
