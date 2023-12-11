@@ -2,8 +2,9 @@ from django.urls import path
 import verification_app.views as views
 
 urlpatterns = [
-    path('', views.UploadSOUTView.as_view(), name='upload'),
-    path('organizations', views.OrganizationsView.as_view(), name='organizations'),
+    path('', views.OrganizationsView.as_view(), name='organizations'),
+    path('upload', views.UploadSOUTView.as_view(), name='upload'),
+
     path('organizations/<int:pk>', views.OrganizationPlacesView.as_view(), name='organization-places'),
 
     path('file_sout/<int:pk>', views.FileSOUTView.as_view(), name='file-sout'),

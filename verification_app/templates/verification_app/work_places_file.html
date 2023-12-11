@@ -38,7 +38,15 @@
             <td> {{ place.position }}</td>
             <td> {{ place.workers_quantity }}</td>
             <td> {{ place.profession }}</td>
-            <td class="{% if place.status == 'CH' %} table-success {% else %} table-warning {% endif %}">
+            <td class="
+                {% if place.status == 'CH' %}
+                    table-success
+                {% elif place.status == 'WA' %}
+                    table-warning
+                {% else %}
+                    table-secondary
+                {% endif %}">
+
                 {{ place.get_status_display }}
             </td>
 

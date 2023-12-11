@@ -29,7 +29,6 @@ class FileSOUT(models.Model):
 
 class WorkPlace(models.Model):
 
-    # CREATED = 'CR'
     CHECKED = 'CH'
     WARNING = 'WA'
     NOT_USED = 'NU'
@@ -50,9 +49,9 @@ class WorkPlace(models.Model):
     profession = models.IntegerField(null=True, blank=True)
     date_sout = models.DateField()
     file = models.ForeignKey(FileSOUT, on_delete=models.CASCADE)
-
     status = models.CharField(max_length=2, choices=STATUSES, default=CHECKED)
+
     description = models.CharField(max_length=200, default='', blank=True)
 
     def __str__(self):
-        return f'Рабочее место: {self.place_id} - {self.organization.name}'
+        return f'Экземпляр РМ: {self.place_id} - {self.organization.name}'

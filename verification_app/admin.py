@@ -8,6 +8,5 @@ admin.site.register(FileSOUT)
 @admin.register(WorkPlace)
 class WorkPlaceAdmin(admin.ModelAdmin):
     list_displate = ['id', 'place_id', 'organization']
-    list_filter = ['organization']
-    actions = ['set_ch']
+    list_filter = ['file']
 

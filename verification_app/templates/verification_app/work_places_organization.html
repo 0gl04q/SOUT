@@ -13,15 +13,14 @@
 {% block content %}
 
 <h3 class="my-3 text-justify">Рабочие места организации</h3>
-    <div>
-        <p>Организация: {{ organization }}</p>
-        <p>Всего загруженно рабочих мест: {{ total_places_count  }}</p>
+        <p>Организация: {{ organization }} </p>
+        <p>Всего загруженно экземпляров рабочих мест: {{ total_places_count  }}</p>
         <p>Количество рабочих мест прошедших проверку: {{ checked_places_count }}</p>
         <p>Количество рабочих мест с предупреждением: {{ warning_places_count }}</p>
 
         <a href="{% url 'download-excel-organization' pk=organization.pk %}" class="btn btn-success mb-3 ms-2 align-right">Скачать Excel</a>
-        <a href="{% url 'file-sout' pk=organization.pk %}" class="btn btn-primary mb-3 align-right">Файлы организации</a>
-    </div>
+        <a href="{% url 'file-sout' pk=organization.pk %}" class="btn btn-primary mb-3">Файлы организации</a>
+
 <table class="table">
     <thead>
         <tr>

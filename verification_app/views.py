@@ -15,6 +15,8 @@ from .models import FileSOUT, Organisation, WorkPlace
 
 
 class UploadSOUTView(CreateView):
+    """ View загрузки файлов SOUT """
+
     model = FileSOUT
     form_class = FileSOUTForm
     template_name = 'verification_app/load_file.html'
@@ -117,6 +119,8 @@ class UploadSOUTView(CreateView):
 
 
 class OrganizationsView(ListView):
+    """ View загруженных организаций """
+
     paginate_by = 10
     model = Organisation
     template_name = 'verification_app/organizations.html'
@@ -127,6 +131,8 @@ class OrganizationsView(ListView):
         return context
 
     def get_queryset(self):
+        """ Поиск по организациям: Наименование, ИНН """
+
         query = self.request.GET.get("q")
         if query:
             object_list = Organisation.objects.filter(
@@ -137,6 +143,8 @@ class OrganizationsView(ListView):
 
 
 class OrganizationPlacesView(ListView):
+    """ View подтвержденных рабочих мест конкретной организации организации """
+
     model = WorkPlace
     template_name = 'verification_app/work_places_organization.html'
     context_object_name = 'work_places'
@@ -144,12 +152,12 @@ class OrganizationPlacesView(ListView):
     def get_queryset(self):
         pk = self.kwargs['pk']
 
+        # Список подтвержденных рабочих мест
         queryset = WorkPlace.objects.filter(
             organization=pk,
             status=WorkPlace.CHECKED
         )
 
-        # queryset = get_organization_places_queryset(pk)
         return queryset
 
     def get_context_data(self, *args, **kwargs):
@@ -158,19 +166,20 @@ class OrganizationPlacesView(ListView):
         context = super().get_context_data(*args, **kwargs)
         context['organization'] = Organisation.objects.get(pk=pk)
 
+        # Считаем количество рабочих мест агрегированных по статусу
         workplace_counts = WorkPlace.objects.filter(organization=pk).values('status').annotate(count=Count('id'))
-
-        workplace_counts_statuses = [item['status'] for item in workplace_counts]
+        statuses = [item['status'] for item in workplace_counts]
 
         context['checked_places_count'] = workplace_counts.get(
             status=WorkPlace.CHECKED
-        )['count'] if WorkPlace.CHECKED in workplace_counts_statuses else 0
+        )['count'] if WorkPlace.CHECKED in statuses else 0
 
-        context['warning_places_count'] = workplace_counts.get(
+        context['warning_places_count'] = int(workplace_counts.get(
             status=WorkPlace.WARNING
-        )['count'] if WorkPlace.WARNING in workplace_counts_statuses else 0
+        )['count'] / 2) if WorkPlace.WARNING in statuses else 0
 
         context['total_places_count'] = sum(item['count'] for item in workplace_counts)
+
         return context
 
 
@@ -194,6 +203,8 @@ def get_organization_places_queryset(pk):
 
 
 class WorkPlaceView(UpdateView):
+    """ View конкретного рабочего места """
+
     model = WorkPlace
     form_class = WorkPlaceForm
     template_name = 'verification_app/work_place.html'
@@ -203,13 +214,26 @@ class WorkPlaceView(UpdateView):
         pk_organization = self.object.organization.pk
         pk_file = self.object.file.pk
 
+        # Переходим на страницу с ошибками
         return reverse_lazy('wa-file-places', kwargs={'pk_organization': pk_organization, 'pk_file': pk_file})
+
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+
+        # Исключаем не нужный для редактирования статус
+        form.fields['status'].choices = [
+            (key, value) for key, value in form.fields['status'].choices
+            if key != 'NU'
+        ]
+
+        return form
 
     def get_context_data(self, **kwargs):
         pk_organization = self.object.organization.pk
         pk_file = self.object.file.pk
         place_id = self.object.place_id
 
+        # Получаем список связанных проблем в других файлах с этим рабочем местом
         wa_queryset = WorkPlace.objects.filter(
             place_id=place_id,
             organization=pk_organization,
@@ -220,6 +244,30 @@ class WorkPlaceView(UpdateView):
         context['wa_work_places'] = wa_queryset
 
         return context
+
+    def form_valid(self, form):
+
+        # Если форма валидна меняем статус всех связанных проблем
+        status = form.cleaned_data['status']
+        if status != WorkPlace.WARNING:
+
+            obj = WorkPlace.objects.get(pk=self.kwargs['pk'])
+
+            pk_organization = obj.organization.pk
+            pk_file = obj.file.pk
+            place_id = obj.place_id
+
+            wa_queryset = WorkPlace.objects.filter(
+                place_id=place_id,
+                organization=pk_organization,
+                status=WorkPlace.WARNING
+            ).exclude(file=pk_file)
+
+            for wp in wa_queryset:
+                wp.status = WorkPlace.NOT_USED
+                wp.save()
+
+        return super().form_valid(form)
 
 
 class FileSOUTView(ListView):
@@ -238,19 +286,27 @@ class FileSOUTView(ListView):
 
         context = super().get_context_data(*args, **kwargs)
         context['organization'] = Organisation.objects.get(pk=pk)
-        context['files_sout'] = zip(context['files_sout'], self.sum_repeat())
+        context['files_sout'] = zip(context['files_sout'], self._sum_repeat())
 
         return context
 
-    def sum_repeat(self):
+    def _sum_repeat(self):
         all_repeat = []
 
-        for file in self.get_queryset():
-            places_id = WorkPlace.objects.filter(organization=self.kwargs.get('pk')).values('place_id').annotate(
-                place_count=Count('place_id')).filter(place_count__gt=1).values('place_id')
+        places_id = WorkPlace.objects.filter(
+            organization=self.kwargs.get('pk'),
+            status=WorkPlace.WARNING
+        ).values('place_id')
 
-            queryset = WorkPlace.objects.filter(file=file, place_id__in=places_id).count()
-            all_repeat.append(queryset)
+        for file in self.get_queryset():
+            queryset = WorkPlace.objects.filter(
+                file=file,
+                place_id__in=places_id
+            ).values('place_id')
+
+            places_id = places_id.exclude(place_id__in=queryset)
+
+            all_repeat.append(queryset.count())
 
         return all_repeat
 

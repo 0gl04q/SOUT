@@ -21,3 +21,9 @@ class WorkPlaceForm(forms.ModelForm):
             'status': 'Статус',
             'description': 'Описание',
         }
+
+        widgets = {
+            "description": forms.Textarea(attrs={"cols": 50, "rows": 3, "class": "form-control"}),
+            "status": forms.Select(attrs={"class": "form-control"})
+        }
+

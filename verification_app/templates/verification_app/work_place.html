@@ -17,12 +17,13 @@
 <form method="post" class="mb-4">
     {% csrf_token %}
     {{ form.as_p }}
-    <input type="submit" value="Cохранить">
+    <input type="submit" value="Cохранить" class="btn btn-primary">
+    <button type="button" class="btn btn-primary align-right" id="toggleButton" onclick="toggleTable()">Показать ошибки</button>
+
 </form>
 
 
-<h3 class="mt-4" align="center">Проблемы связанные с этим РМ</h3>
-<table class="table">
+<table class="table" id="workplaceTable" style="display: none;">
     <thead>
         <tr>
             <th scope="col">№</th>
@@ -54,4 +55,23 @@
 </table>
 
 
+{% endblock %}
+
+
+{% block script %}
+    <script>
+        function toggleTable() {
+          var table = document.getElementById("workplaceTable");
+          var button = document.getElementById("toggleButton");
+
+          if (table.style.display === "none") {
+            table.style.display = "table";
+            button.innerHTML = "Скрыть ошибки";
+          } else {
+            table.style.display = "none";
+            button.innerHTML = "Показать ошибки";
+          }
+        }
+
+    </script>
 {% endblock %}
