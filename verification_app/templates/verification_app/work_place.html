@@ -11,8 +11,11 @@
 {% block content %}
 
 <h3> Файл: {{ object.organization }} ( {{ object.file.work_places_count }} РМ ) </h3>
-<p> Номер рабочего места: {{ object.place_id }}</p>
-
+<p> Подразделение: {{ object.sub_unit }}</p>
+<p> Номер: {{ object.place_id }}</p>
+<p> Наименование: {{ object.position }}</p>
+<p> Работники: {{ object.workers_quantity }}</p>
+<p> Код ОК-01694: {{ object.profession }}</p>
 
 <form method="post" class="mb-4">
     {% csrf_token %}
@@ -41,11 +44,11 @@
             {% for wa in wa_work_places %}
                 <tr>
                     <td> {{ forloop.counter }} </td>
-                    <td> {{ wa.sub_unit }}</td>
+                    <td class=" {% if object.sub_unit != wa.sub_unit %} table-danger {% endif %}"> {{ wa.sub_unit }}</td>
                     <td>{{ wa.place_id }}</td>
-                    <td> {{ wa.position }}</td>
-                    <td> {{ wa.workers_quantity }}</td>
-                    <td> {{ wa.profession }}</td>
+                    <td class=" {% if object.position != wa.position %} table-danger {% endif %}"> {{ wa.position }}</td>
+                    <td class=" {% if object.workers_quantity != wa.workers_quantity %} table-danger {% endif %}"> {{ wa.workers_quantity }}</td>
+                    <td class=" {% if object.profession != wa.profession %} table-danger {% endif %}"> {{ wa.profession }}</td>
                     <td class="text-left small"> <b>Повтор в файле:</b> <a href="{% url 'file-sout-places' wa.file.organization.pk wa.file.pk  %}"> {{ wa.file.organization }} ( {{ wa.file.work_places_count }} РМ )</a></td>
                     <td> {{ wa.description }}</td>
                 </tr>

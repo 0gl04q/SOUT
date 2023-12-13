@@ -166,7 +166,7 @@ class OrganizationPlacesView(ListView):
         context = super().get_context_data(*args, **kwargs)
         context['organization'] = Organisation.objects.get(pk=pk)
 
-        # Считаем количество рабочих мест агрегированных по статусу
+        # Считаем количество рабочих мест
         workplace_counts = WorkPlace.objects.filter(organization=pk).values('status').annotate(count=Count('id'))
         statuses = [item['status'] for item in workplace_counts]
 

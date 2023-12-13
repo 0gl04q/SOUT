@@ -47,11 +47,11 @@
             {% for wa in wa_work_places|get_by_key:place.place_id %}
                 <tr class="table-secondary">
                     <td> - </td>
-                    <td> {{ wa.sub_unit }}</td>
+                    <td class=" {% if place.sub_unit != wa.sub_unit %} table-danger {% endif %} "> {{ wa.sub_unit }}</td>
                     <td>{{ wa.place_id }}</td>
-                    <td> {{ wa.position }}</td>
-                    <td> {{ wa.workers_quantity }}</td>
-                    <td> {{ wa.profession }}</td>
+                    <td class=" {% if place.position != wa.position %} table-danger {% endif %} "> {{ wa.position }}</td>
+                    <td class=" {% if place.workers_quantity != wa.workers_quantity %} table-danger {% endif %} "> {{ wa.workers_quantity }}</td>
+                    <td class=" {% if place.profession != wa.profession %} table-danger {% endif %} "> {{ wa.profession }}</td>
                     <td class="text-left small"> <b>Повтор в файле:</b> <a href="{% url 'file-sout-places' wa.file.organization.pk wa.file.pk  %}"> {{ wa.file.organization }} ( {{ wa.file.work_places_count }} РМ )</a></td>
                     <td> {{ wa.description }}</td>
                     <td></td>

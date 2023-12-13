@@ -26,9 +26,16 @@ class FileSOUT(models.Model):
     def __str__(self):
         return f'Файл XML: {self.organization.inn} - {self.work_places_count} РМ'
 
+    def delete(self, *args, **kwargs):
+        wp_file = WorkPlace.objects.filter(file=self).values('place_id')
+
+
+
+        # После этого удалите файл
+        super(FileSOUT, self).delete(*args, **kwargs)
+
 
 class WorkPlace(models.Model):
-
     CHECKED = 'CH'
     WARNING = 'WA'
     NOT_USED = 'NU'
