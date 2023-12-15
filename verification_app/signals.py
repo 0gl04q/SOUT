@@ -10,7 +10,7 @@ def handle_pre_delete(sender, instance, **kwargs):
     wp_file = WorkPlace.objects.filter(file=instance).values('place_id')
 
     wp_repeat = WorkPlace.objects.filter(
-        ~Q(status=WorkPlace.NOT_USED),
+        status=WorkPlace.WARNING,
         organization=instance.organization
     ).values("place_id").annotate(
         count_wp=Count("place_id")

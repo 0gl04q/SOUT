@@ -14,5 +14,6 @@ urlpatterns = [
     path('work_place/<int:pk>', views.WorkPlaceView.as_view(), name='work-place'),
 
     path('download_file/<int:pk>', views.get_excel_file, name='download-excel-file'),
-    path('download_organization/<int:pk>', views.get_excel_organization, name='download-excel-organization')
+    path('download_organization/<int:pk>', views.get_excel_organization, name='download-excel-organization'),
+    path('delete_item/', views.delete_item, name='delete_item')
 ]

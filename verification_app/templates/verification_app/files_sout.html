@@ -19,6 +19,7 @@
             <th scope="col">Год</th>
             <th scope="col">Файл</th>
             <th scope="col">Предупреждения</th>
+            <th scope="col">Удаление</th>
         </tr>
     </thead>
     <tbody>
@@ -38,10 +39,35 @@
                     {{ warning_count }}
                 </td>
             {% endif %}
+            <td>
+                <button type="button" class="delete-btn" data-id="{{ file.id }}">Удалить</button>
+            </td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
 
+
+{% endblock %}
+
+{% block script %}
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <script>
+      $(document).ready(function(){
+        $(".delete-btn").on("click", function(){
+          var itemId = $(this).data("id");
+          $.ajax({
+            type: "POST",
+            url: "{% url 'delete_item' %}",
+            data: {'item_id': itemId, 'csrfmiddlewaretoken': '{{ csrf_token }}'},
+            success: function(response){
+              location.reload();
+            }
+          });
+        });
+      });
+
+
+    </script>
 
 {% endblock %}

@@ -1,5 +1,7 @@
 import zipfile
 
+from django.db.models import Window, F
+from django.db.models.functions import Rank
 from django.shortcuts import redirect
 from django.urls import reverse, reverse_lazy
 from django.core.files.base import ContentFile
@@ -8,6 +10,10 @@ from django.views.generic import ListView, UpdateView
 from django.http import HttpResponse
 from django.utils.encoding import escape_uri_path
 from django.db.models import Q, F, Count, OuterRef, Subquery, Max
+
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from django.shortcuts import get_object_or_404
 
 from .functions import SOUTFile, create_xlsx
 from .forms import FileSOUTForm, WorkPlaceForm
@@ -95,9 +101,9 @@ class UploadSOUTView(CreateView):
             if old_work_places:
                 status_wp = WorkPlace.WARNING
 
-                for old_wp in old_work_places:
-                    old_wp.status = status_wp
-                    old_wp.save()
+                # for old_wp in old_work_places:
+                #     old_wp.status = status_wp
+                #     old_wp.save()
 
             else:
                 status_wp = WorkPlace.CHECKED
@@ -153,10 +159,13 @@ class OrganizationPlacesView(ListView):
         pk = self.kwargs['pk']
 
         # Список подтвержденных рабочих мест
-        queryset = WorkPlace.objects.filter(
-            organization=pk,
-            status=WorkPlace.CHECKED
-        )
+        queryset = WorkPlace.objects.filter(organization=pk).annotate(
+            rank=Window(
+                expression=Rank(),
+                order_by=[F('file__date').desc()],
+                partition_by=[F('place_id')],
+            ),
+        ).order_by('place_id', '-file__date').filter(rank=1)
 
         return queryset
 
@@ -167,18 +176,11 @@ class OrganizationPlacesView(ListView):
         context['organization'] = Organisation.objects.get(pk=pk)
 
         # Считаем количество рабочих мест
-        workplace_counts = WorkPlace.objects.filter(organization=pk).values('status').annotate(count=Count('id'))
-        statuses = [item['status'] for item in workplace_counts]
+        wa_counts = WorkPlace.objects.filter(organization=pk, status=WorkPlace.WARNING).count()
 
-        context['checked_places_count'] = workplace_counts.get(
-            status=WorkPlace.CHECKED
-        )['count'] if WorkPlace.CHECKED in statuses else 0
+        context['warning_places_count'] = wa_counts
 
-        context['warning_places_count'] = int(workplace_counts.get(
-            status=WorkPlace.WARNING
-        )['count'] / 2) if WorkPlace.WARNING in statuses else 0
-
-        context['total_places_count'] = sum(item['count'] for item in workplace_counts)
+        context['checked_places_count'] = self.get_queryset().count()
 
         return context
 
@@ -236,8 +238,7 @@ class WorkPlaceView(UpdateView):
         # Получаем список связанных проблем в других файлах с этим рабочем местом
         wa_queryset = WorkPlace.objects.filter(
             place_id=place_id,
-            organization=pk_organization,
-            status=WorkPlace.WARNING
+            organization=pk_organization
         ).exclude(file=pk_file)
 
         context = super().get_context_data(**kwargs)
@@ -245,29 +246,29 @@ class WorkPlaceView(UpdateView):
 
         return context
 
-    def form_valid(self, form):
-
-        # Если форма валидна меняем статус всех связанных проблем
-        status = form.cleaned_data['status']
-        if status != WorkPlace.WARNING:
-
-            obj = WorkPlace.objects.get(pk=self.kwargs['pk'])
-
-            pk_organization = obj.organization.pk
-            pk_file = obj.file.pk
-            place_id = obj.place_id
-
-            wa_queryset = WorkPlace.objects.filter(
-                place_id=place_id,
-                organization=pk_organization,
-                status=WorkPlace.WARNING
-            ).exclude(file=pk_file)
-
-            for wp in wa_queryset:
-                wp.status = WorkPlace.NOT_USED
-                wp.save()
-
-        return super().form_valid(form)
+    # def form_valid(self, form):
+    #
+    #     # Если форма валидна меняем статус всех связанных проблем
+    #     status = form.cleaned_data['status']
+    #     if status != WorkPlace.WARNING:
+    #
+    #         obj = WorkPlace.objects.get(pk=self.kwargs['pk'])
+    #
+    #         pk_organization = obj.organization.pk
+    #         pk_file = obj.file.pk
+    #         place_id = obj.place_id
+    #
+    #         wa_queryset = WorkPlace.objects.filter(
+    #             place_id=place_id,
+    #             organization=pk_organization,
+    #             status=WorkPlace.WARNING
+    #         ).exclude(file=pk_file)
+    #
+    #         for wp in wa_queryset:
+    #             wp.status = WorkPlace.NOT_USED
+    #             wp.save()
+    #
+    #     return super().form_valid(form)
 
 
 class FileSOUTView(ListView):
@@ -293,20 +294,14 @@ class FileSOUTView(ListView):
     def _sum_repeat(self):
         all_repeat = []
 
-        places_id = WorkPlace.objects.filter(
-            organization=self.kwargs.get('pk'),
-            status=WorkPlace.WARNING
-        ).values('place_id')
-
         for file in self.get_queryset():
-            queryset = WorkPlace.objects.filter(
+            count_wa_place = WorkPlace.objects.filter(
                 file=file,
-                place_id__in=places_id
-            ).values('place_id')
+                organization=self.kwargs.get('pk'),
+                status=WorkPlace.WARNING
+            ).count()
 
-            places_id = places_id.exclude(place_id__in=queryset)
-
-            all_repeat.append(queryset.count())
+            all_repeat.append(count_wa_place)
 
         return all_repeat
 
@@ -352,8 +347,7 @@ class WarningView(ListView):
             place.place_id: [
                 pl for pl in WorkPlace.objects.filter(
                     organization=context['organization'],
-                    place_id=place.place_id,
-                    status=WorkPlace.WARNING
+                    place_id=place.place_id
                 ).exclude(file=place.file)
             ] for place in self.get_queryset()
         }
@@ -387,3 +381,11 @@ def get_excel_organization(request, pk):
     response['Content-Disposition'] = f'attachment; filename={escape_uri_path(f"{organization}_SOUT.xlsx")}'
 
     return response
+
+
+@require_POST
+def delete_item(request):
+    item_id = request.POST.get('item_id')
+    item = get_object_or_404(FileSOUT, id=item_id)
+    item.delete()
+    return JsonResponse({'message': 'Запись успешно удалена.'})

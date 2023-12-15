@@ -14,14 +14,14 @@
 
 <h3 class="my-3 text-justify">Рабочие места организации</h3>
         <p>Организация: {{ organization }} </p>
-        <p>Всего загруженно экземпляров рабочих мест: {{ total_places_count  }}</p>
-        <p>Количество рабочих мест прошедших проверку: {{ checked_places_count }}</p>
+        <p>Количество рабочих мест на выгрузку: {{ checked_places_count }}</p>
         <p>Количество рабочих мест с предупреждением: {{ warning_places_count }}</p>
 
-        <a href="{% url 'download-excel-organization' pk=organization.pk %}" class="btn btn-success mb-3 ms-2 align-right">Скачать Excel</a>
-        <a href="{% url 'file-sout' pk=organization.pk %}" class="btn btn-primary mb-3">Файлы организации</a>
+        <a href="{% url 'file-sout' pk=organization.pk %}" class="btn btn-primary">Файлы организации</a>
+        <button type="button" class="btn btn-primary" id="toggleButton" onclick="toggleTable()">Таблица РМ</button>
+        <a href="{% url 'download-excel-organization' pk=organization.pk %}" class="btn btn-success">Скачать Excel</a>
 
-<table class="table">
+<table class="table" id="workplaceTable" style="display: none;">
     <thead>
         <tr>
             <th scope="col">№</th>
@@ -48,4 +48,20 @@
 </table>
 
 
+{% endblock %}
+
+{% block script %}
+    <script>
+        function toggleTable() {
+          var table = document.getElementById("workplaceTable");
+          var button = document.getElementById("toggleButton");
+
+          if (table.style.display === "none") {
+            table.style.display = "table";
+          } else {
+            table.style.display = "none";
+          }
+        }
+
+    </script>
 {% endblock %}

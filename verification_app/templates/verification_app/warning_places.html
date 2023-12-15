@@ -43,9 +43,9 @@
             <td> {{ place.profession }}</td>
             <td class="table-warning">  <b> {{ place.get_status_display }} </b> </td>
             <td> {{ place.description }}</td>
-            <td> <a href="{% url 'work-place' pk=place.pk %}"><button type="" class="btn btn-primary no-border">Редактировать</button> </a></td>
+            <td> <a href="{% url 'work-place' pk=place.pk %}"><button type="button" class="btn btn-primary no-border">Редактировать</button></a></td>
             {% for wa in wa_work_places|get_by_key:place.place_id %}
-                <tr class="table-secondary">
+                <tr class="table table-secondary">
                     <td> - </td>
                     <td class=" {% if place.sub_unit != wa.sub_unit %} table-danger {% endif %} "> {{ wa.sub_unit }}</td>
                     <td>{{ wa.place_id }}</td>
@@ -66,3 +66,4 @@
 
 
 {% endblock %}
+
