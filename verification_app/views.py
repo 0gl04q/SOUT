@@ -1,21 +1,21 @@
 import zipfile
 
-from django.db.models import Window, F
+from django.db.models import Window
 from django.db.models.functions import Rank
 from django.shortcuts import redirect
-from django.urls import reverse, reverse_lazy
+from django.urls import reverse_lazy
 from django.core.files.base import ContentFile
 from django.views.generic.edit import CreateView
 from django.views.generic import ListView, UpdateView
 from django.http import HttpResponse
 from django.utils.encoding import escape_uri_path
-from django.db.models import Q, F, Count, OuterRef, Subquery, Max
+from django.db.models import Q, F, OuterRef, Subquery, Max
 
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.shortcuts import get_object_or_404
 
-from .functions import SOUTFile, create_xlsx
+from verification_app.service.functions import SOUTFile, create_xlsx
 from .forms import FileSOUTForm, WorkPlaceForm
 from .models import FileSOUT, Organisation, WorkPlace
 
@@ -100,11 +100,6 @@ class UploadSOUTView(CreateView):
 
             if old_work_places:
                 status_wp = WorkPlace.WARNING
-
-                # for old_wp in old_work_places:
-                #     old_wp.status = status_wp
-                #     old_wp.save()
-
             else:
                 status_wp = WorkPlace.CHECKED
 
@@ -245,30 +240,6 @@ class WorkPlaceView(UpdateView):
         context['wa_work_places'] = wa_queryset
 
         return context
-
-    # def form_valid(self, form):
-    #
-    #     # Если форма валидна меняем статус всех связанных проблем
-    #     status = form.cleaned_data['status']
-    #     if status != WorkPlace.WARNING:
-    #
-    #         obj = WorkPlace.objects.get(pk=self.kwargs['pk'])
-    #
-    #         pk_organization = obj.organization.pk
-    #         pk_file = obj.file.pk
-    #         place_id = obj.place_id
-    #
-    #         wa_queryset = WorkPlace.objects.filter(
-    #             place_id=place_id,
-    #             organization=pk_organization,
-    #             status=WorkPlace.WARNING
-    #         ).exclude(file=pk_file)
-    #
-    #         for wp in wa_queryset:
-    #             wp.status = WorkPlace.NOT_USED
-    #             wp.save()
-    #
-    #     return super().form_valid(form)
 
 
 class FileSOUTView(ListView):

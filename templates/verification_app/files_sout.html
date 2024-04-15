@@ -12,14 +12,14 @@
 <h3 class="my-3 text-justify">Файлы организации</h3>
     <p>Организация: {{ organization }} </p>
 
-<table class="table">
+<table class="table text-center">
     <thead>
         <tr>
             <th scope="col">№</th>
             <th scope="col">Год</th>
             <th scope="col">Файл</th>
             <th scope="col">Предупреждения</th>
-            <th scope="col">Удаление</th>
+            <th scope="col"></th>
         </tr>
     </thead>
     <tbody>
@@ -40,7 +40,7 @@
                 </td>
             {% endif %}
             <td>
-                <button type="button" class="delete-btn" data-id="{{ file.id }}">Удалить</button>
+                <button type="button" class="btn btn-danger" data-id="{{ file.id }}">Удалить</button>
             </td>
         </tr>
         {% endfor %}
@@ -54,7 +54,7 @@
     <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
     <script>
       $(document).ready(function(){
-        $(".delete-btn").on("click", function(){
+        $(".btn-danger").on("click", function(){
           var itemId = $(this).data("id");
           $.ajax({
             type: "POST",
